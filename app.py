@@ -61,6 +61,23 @@ div[data-testid="stButton"] button {
     color: #666;
     font-style: italic;
 }
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .result-box {
+        background: #1e1e2e !important;
+        color: #e0e0e0 !important;
+        border-left: 4px solid #89b4fa !important;
+    }
+    .card-box {
+        background: #2a2a3e !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #4a4a6a !important;
+    }
+    .main-header p {
+        color: white !important;
+    }
+}
 </style>
 """,
     unsafe_allow_html=True,
