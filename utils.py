@@ -17,7 +17,7 @@ _response_cache = {}
 # Track request timestamps for rate limiting
 _request_timestamps = []
 # Maximum requests per minute (free tier limit)
-MAX_REQUESTS_PER_MINUTE = 5
+MAX_REQUESTS_PER_MINUTE = 15
 # Cache duration in seconds (5 minutes)
 CACHE_DURATION = 300
 
@@ -111,7 +111,7 @@ def generate_summary(text):
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
-    model = genai.GenerativeModel("models/gemini-2.5-flash")
+    model = genai.GenerativeModel("models/gemini-1.5-flash")
     prompt = f"Summarize the following notes in 5 clear bullet points. Use simple language.\n\nNotes:\n{text}"
     response = model.generate_content(prompt)
     result = response.text
@@ -134,7 +134,7 @@ def generate_key_points(text):
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
-    model = genai.GenerativeModel("models/gemini-2.5-flash")
+    model = genai.GenerativeModel("models/gemini-1.5-flash")
     prompt = f"Extract the most important key points from these notes. List them as bullet points.\n\nNotes:\n{text}"
     response = model.generate_content(prompt)
     result = response.text
@@ -157,7 +157,7 @@ def generate_flashcards(text):
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
-    model = genai.GenerativeModel("models/gemini-2.5-flash")
+    model = genai.GenerativeModel("models/gemini-1.5-flash")
     prompt = f"""Create 5 flashcards from the text below. Return ONLY a valid JSON array, nothing else.
 
 Each flashcard must have "question" and "answer" fields.
@@ -224,7 +224,7 @@ def generate_study_questions(text):
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
-    model = genai.GenerativeModel("models/gemini-2.5-flash")
+    model = genai.GenerativeModel("models/gemini-1.5-flash")
     prompt = f"""Generate 4 study questions based on the following notes. Include a mix of:
 - 1-2 open-ended explanation questions
 - 1 multiple choice question (with options)

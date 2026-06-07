@@ -2,7 +2,6 @@ import streamlit as st
 import utils
 import pdfplumber
 import os
-from datetime import datetime
 
 st.set_page_config(page_title="AI Notes Summarizer+", page_icon="📝", layout="centered", initial_sidebar_state="expanded")
 
@@ -31,19 +30,27 @@ st.markdown(
 }
 .main-header h1 { margin: 0; font-size: 2em; }
 .main-header p { margin: 5px 0 0; opacity: 0.9; }
-.card-box {
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 15px;
-    margin: 8px 0;
-    background: #fafafa;
-}
 .result-box {
-    background: #f0f8ff;
+    background: #ffffff;
+    border: 1px solid #e8e8e8;
     border-left: 4px solid #667eea;
-    border-radius: 8px;
-    padding: 15px;
-    margin: 10px 0;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 16px 0;
+    font-size: 1.05em;
+    line-height: 1.7;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.result-box ul, .result-box ol {
+    padding-left: 1.5em;
+    margin: 8px 0;
+}
+.result-box li {
+    margin-bottom: 8px;
+}
+.result-box h3 {
+    margin-top: 0;
+    color: #1a1a2e;
 }
 div[data-testid="stButton"] button {
     border-radius: 20px;
@@ -60,19 +67,7 @@ div[data-testid="stButton"] button {
     font-size: 0.8em;
     color: #666;
     font-style: italic;
-}
-
-/* Force dark text inside result/card boxes regardless of theme */
-.result-box, .result-box p, .result-box li, .result-box span {
-    color: #1a1a2e !important;
-}
-.card-box, .card-box p, .card-box li, .card-box span {
-    color: #1a1a2e !important;
-}
-.result-box h3 {
-    color: #1a1a2e !important;
-}
-</style>
+}</style>
 """,
     unsafe_allow_html=True,
 )
@@ -88,17 +83,6 @@ document.addEventListener('keydown', function(e) {
         const generateBtn = document.querySelector('button[kind="primary"]');
         if (generateBtn && !generateBtn.disabled) {
             generateBtn.click();
-        }
-    }
-    
-    // Handle Ctrl+L for Clear history
-    if (e.ctrlKey && e.key === 'l') {
-        e.preventDefault();
-        const clearBtns = Array.from(document.querySelectorAll('button')).filter(btn => 
-            btn.textContent.includes('🗑️ Clear') || btn.title.includes('Clear all history')
-        );
-        if (clearBtns.length > 0) {
-            clearBtns[0].click();
         }
     }
     
@@ -137,7 +121,7 @@ document.addEventListener('keydown', function(e) {
 )
 
 # Add keyboard shortcut hints
-st.markdown('<p class="shortcut-hint">💡 Keyboard shortcuts: Ctrl+Enter=Generate, Ctrl+S=Sample, Ctrl+L=Clear History, Ctrl+F=Focus Text, Ctrl+P=Focus PDF</p>', unsafe_allow_html=True)
+st.markdown('<p class="shortcut-hint">💡 Keyboard shortcuts: Ctrl+Enter=Generate, Ctrl+S=Sample, Ctrl+F=Focus Text, Ctrl+P=Focus PDF</p>', unsafe_allow_html=True)
 
 with st.sidebar:
     st.markdown(
@@ -157,133 +141,6 @@ with st.sidebar:
     3. Click **Generate** (or `Ctrl+Enter`)
     4. Download or save results
     """)
-    
-    st.markdown("### 🎯 Features")
-    st.markdown("""
-    - 📌 **Summary** — Bullet-point overview
-    - 🔑 **Key Points** — Important concepts
-    - ❓ **Study Questions** — Test your understanding
-    """)
-    
-    st.markdown("### ⌨️ Shortcuts")
-    st.markdown("""
-    | Key | Action |
-    |---|---|
-    | `Ctrl+Enter` | Generate |
-    | `Ctrl+S` | Sample text |
-    | `Ctrl+L` | Clear history |
-    | `Ctrl+F` | Focus text |
-    | `Ctrl+P` | Focus PDF |
-    """)
-    
-    st.markdown("---")
-    st.markdown("### 📜 History")
-    
-    # Initialize history if not exists
-    if "history" not in st.session_state:
-        st.session_state.history = []
-    if "pinned_history" not in st.session_state:
-        st.session_state.pinned_history = []
-    
-    # History controls
-    col1, col2, col3 = st.columns([2, 2, 1])
-    with col1:
-        search_term = st.text_input("🔍 Search history", placeholder="Search in history...", key="history_search")
-    with col2:
-        show_pinned = st.checkbox("📌 Show pinned only", value=False)
-    with col3:
-        if st.button("🗑️ Clear", help="Clear all history"):
-            st.session_state.history = []
-            st.session_state.pinned_history = []
-            st.rerun()
-    
-    # Filter history based on search and pinned status
-    def matches_search(entry):
-        if not search_term:
-            return True
-        return (search_term.lower() in entry["time"].lower() or 
-                search_term.lower() in entry["mode"].lower() or
-                search_term.lower() in entry["preview"].lower())
-    
-    # Get entries to display
-    if show_pinned:
-        entries_to_show = [e for e in st.session_state.pinned_history if matches_search(e)]
-        if not entries_to_show:
-            st.caption("No pinned entries match your search.")
-    else:
-        # Combine pinned and regular history (pinned first)
-        regular_entries = [e for e in st.session_state.history if e not in st.session_state.pinned_history]
-        entries_to_show = st.session_state.pinned_history + regular_entries[-5:]  # Show last 5 regular
-        entries_to_show = [e for e in entries_to_show if matches_search(e)]
-        
-        if not entries_to_show:
-            st.caption("No history entries match your search.")
-    
-    # Display history entries
-    for idx, entry in enumerate(reversed(entries_to_show)):
-        # Determine if entry is pinned
-        is_pinned = entry in st.session_state.pinned_history
-        
-        # Create a unique identifier for this entry
-        entry_id = f"{entry['time']}_{entry['mode']}_{idx}_{hash(entry['preview']) % 10000}"
-        
-        with st.container():
-            col1, col2, col3 = st.columns([6, 1, 1])
-            with col1:
-                with st.expander(f"{entry['time']} — {entry['mode']} {'📌' if is_pinned else ''}", expanded=False):
-                    st.code(entry["preview"], language="text")
-                    if st.button("👁️ View Full", key=f"view_{entry_id}", help="View full result"):
-                        st.session_state[f"show_full_{entry_id}"] = True
-                        st.rerun()
-                    
-                    # Show full result if requested
-                    if st.session_state.get(f"show_full_{entry_id}", False):
-                        # Determine which result to show based on mode and time
-                        full_result = None
-                        if entry["mode"] == "Summary" and hasattr(st.session_state, 'last_summary') and st.session_state.get('last_summary_time') == entry['time']:
-                            full_result = st.session_state.last_summary
-                        elif entry["mode"] == "Key Points" and hasattr(st.session_state, 'last_key_points') and st.session_state.get('last_key_points_time') == entry['time']:
-                            full_result = st.session_state.last_key_points
-                        elif entry["mode"] == "Study Questions" and hasattr(st.session_state, 'last_study_questions') and st.session_state.get('last_study_questions_time') == entry['time']:
-                            full_result = st.session_state.last_study_questions
-                        
-                        if full_result is not None:
-                            st.info(f"📝 {entry['mode']}:")
-                            st.markdown(full_result)
-                        else:
-                            st.info("Full result not available in current session (may have been cleared)")
-                        
-                        if st.button("❌ Close", key=f"close_{entry_id}"):
-                            del st.session_state[f"show_full_{entry_id}"]
-                            st.rerun()
-            
-            with col2:
-                if not is_pinned:
-                    if st.button("📌", key=f"pin_{entry['time']}_{entry['mode']}", help="Pin this entry"):
-                        if entry not in st.session_state.pinned_history:
-                            st.session_state.pinned_history.append(entry)
-                        st.rerun()
-                else:
-                    if st.button("📌", key=f"unpin_{entry['time']}_{entry['mode']}", help="Unpin this entry"):
-                        if entry in st.session_state.pinned_history:
-                            st.session_state.pinned_history.remove(entry)
-                        st.rerun()
-            
-            with col3:
-                if st.button("🗑️", key=f"del_{entry['time']}_{entry['mode']}", help="Delete this entry"):
-                    if entry in st.session_state.history:
-                        st.session_state.history.remove(entry)
-                    if entry in st.session_state.pinned_history:
-                        st.session_state.pinned_history.remove(entry)
-                    st.rerun()
-            
-            st.divider()
-    
-    # Show stats
-    if st.session_state.history or st.session_state.pinned_history:
-        st.caption(f"📊 Total: {len(st.session_state.history)} entries, {len(st.session_state.pinned_history)} pinned")
-    else:
-        st.caption("No history yet.")
 
 st.markdown(
     '<div class="main-header"><h1>📝 AI Notes Summarizer+</h1><p>Summarize, extract key points, and generate study questions from your notes</p></div>',
@@ -421,41 +278,21 @@ if st.button("🚀 Generate", type="primary", use_container_width=True):
                         mime="text/plain",
                     )
 
-                st.session_state.history.append(
-                    {
-                        "time": datetime.now().strftime("%H:%M"),
-                        "mode": mode,
-                        "preview": result[:200] + ("..." if len(result) > 200 else ""),
-                    }
-                )
-
             except Exception as e:
                 error_msg = str(e)
                 if "429" in error_msg or "quota" in error_msg.lower():
                     st.error("""
                     ⚠️ **API Quota Exceeded**
                     
-                    You've reached the free tier limit for Gemini API (5 requests per minute).
-                    Please wait a moment before trying again, or consider:
-                    - Waiting 1-2 minutes before your next request
-                    - Using shorter text inputs to reduce API calls
-                    - Checking your usage at https://ai.dev/rate-limit
+                    Your Gemini API free tier quota has been exhausted.
+                    Solutions:
+                    1. **Get a new free API Key** → https://aistudio.google.com/apikey
+                    2. The app uses **Gemini 1.5 Flash** (1500 req/min free), so rate limits are unlikely
                     
-                    The free tier is generous for demo purposes - this limit resets periodically.
+                    After getting a new key, update `.streamlit/secrets.toml` and restart the app.
                     """)
                 else:
                     st.error(f"Something went wrong: {e}")
-
-         # Store results in session state to persist across reruns
-        if mode == "Summary":
-            st.session_state.last_summary = result
-            st.session_state.last_summary_time = datetime.now().strftime("%H:%M")
-        elif mode == "Key Points":
-            st.session_state.last_key_points = result
-            st.session_state.last_key_points_time = datetime.now().strftime("%H:%M")
-        elif mode == "Study Questions":
-            st.session_state.last_study_questions = result
-            st.session_state.last_study_questions_time = datetime.now().strftime("%H:%M")
 
 st.markdown("---")
 st.caption("Built with Streamlit + Google Gemini API + pdfplumber")
