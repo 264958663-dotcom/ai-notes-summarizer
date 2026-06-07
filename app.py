@@ -278,7 +278,7 @@ if st.button("🚀 Generate", type="primary", use_container_width=True):
                     Your Gemini API free tier quota has been exhausted.
                     Solutions:
                     1. **Get a new free API Key** → https://aistudio.google.com/apikey
-                    2. The app uses **Gemini 1.5 Flash** (1500 req/min free), so rate limits are unlikely
+                    2. The app uses **Gemini 2.0 Flash** (free tier), so rate limits are unlikely
                     
                     After getting a new key, update `.streamlit/secrets.toml` and restart the app.
                     """)
