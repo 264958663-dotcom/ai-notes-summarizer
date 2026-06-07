@@ -106,7 +106,7 @@ def generate_summary(text, detail_level="Normal", language="English"):
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
-    model = genai.GenerativeModel("models/gemini-2.0-flash")
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
     bullet_count = {"Brief": "2-3", "Normal": "5", "Detailed": "8-10"}
     prompt = f"Summarize the following notes in {bullet_count[detail_level]} clear bullet points. {_DETAIL_MAP[detail_level]}. Use simple language. Respond in {language}.\n\nNotes:\n{text}"
     response = model.generate_content(prompt)
@@ -127,7 +127,7 @@ def generate_key_points(text, detail_level="Normal", language="English"):
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
-    model = genai.GenerativeModel("models/gemini-2.0-flash")
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
     bullet_count = {"Brief": "3-4", "Normal": "5-6", "Detailed": "8-10"}
     prompt = f"Extract the most important key points from these notes. List {bullet_count[detail_level]} bullet points. {_DETAIL_MAP[detail_level]}. Respond in {language}.\n\nNotes:\n{text}"
     response = model.generate_content(prompt)
@@ -148,7 +148,7 @@ def generate_flashcards(text, detail_level="Normal", language="English"):
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
-    model = genai.GenerativeModel("models/gemini-2.0-flash")
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
     card_count = {"Brief": "3", "Normal": "5", "Detailed": "8"}
     prompt = f"""Create {card_count[detail_level]} flashcards from the text below. Return ONLY a valid JSON array, nothing else.
 
@@ -205,7 +205,7 @@ def generate_study_questions(text, detail_level="Normal", language="English"):
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
-    model = genai.GenerativeModel("models/gemini-2.0-flash")
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
     question_count = {"Brief": "2", "Normal": "4", "Detailed": "6"}
     prompt = f"""Generate {question_count[detail_level]} study questions based on the following notes. {_DETAIL_MAP[detail_level]}. Include a mix of:
 - Open-ended explanation questions
