@@ -229,7 +229,13 @@ with pdf_tab:
             progress_bar.empty()
             status_text.empty()
 
-mode = st.selectbox("What do you want to generate?", ["Summary", "Key Points", "Study Questions"])
+col1, col2, col3 = st.columns(3)
+with col1:
+    mode = st.selectbox("What to generate", ["Summary", "Key Points", "Study Questions"])
+with col2:
+    detail = st.selectbox("Detail level", ["Brief", "Normal", "Detailed"])
+with col3:
+    lang = st.selectbox("Language", ["English", "Chinese"])
 
 if st.button("🚀 Generate", type="primary", use_container_width=True):
     if not API_READY:
@@ -239,42 +245,27 @@ if st.button("🚀 Generate", type="primary", use_container_width=True):
     else:
         with st.spinner("Thinking..."):
             try:
-                if mode == "Summary":
-                    result = utils.generate_summary(text)
-                    st.markdown(
-                        f'<div class="result-box"><h3>📌 Summary</h3>{result}</div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.download_button(
-                        "📥 Download as TXT",
-                        data=result,
-                        file_name="summary.txt",
-                        mime="text/plain",
-                    )
+                    if mode == "Summary":
+                        result = utils.generate_summary(text, detail, lang)
+                        title = "📌 Summary"
+                        filename = f"summary_{detail}_{lang}.txt"
+                    elif mode == "Key Points":
+                        result = utils.generate_key_points(text, detail, lang)
+                        title = "🔑 Key Points"
+                        filename = f"key_points_{detail}_{lang}.txt"
+                    else:
+                        result = utils.generate_study_questions(text, detail, lang)
+                        title = "❓ Study Questions"
+                        filename = f"study_questions_{detail}_{lang}.txt"
 
-                elif mode == "Key Points":
-                    result = utils.generate_key_points(text)
                     st.markdown(
-                        f'<div class="result-box"><h3>🔑 Key Points</h3>{result}</div>',
+                        f'<div class="result-box"><h3>{title}</h3>{result}</div>',
                         unsafe_allow_html=True,
                     )
                     st.download_button(
                         "📥 Download as TXT",
                         data=result,
-                        file_name="key_points.txt",
-                        mime="text/plain",
-                    )
-
-                elif mode == "Study Questions":
-                    result = utils.generate_study_questions(text)
-                    st.markdown(
-                        f'<div class="result-box"><h3>❓ Study Questions</h3>{result}</div>',
-                        unsafe_allow_html=True,
-                    )
-                    st.download_button(
-                        "📥 Download as TXT",
-                        data=result,
-                        file_name="study_questions.txt",
+                        file_name=filename,
                         mime="text/plain",
                     )
 

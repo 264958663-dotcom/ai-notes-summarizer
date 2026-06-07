@@ -22,17 +22,8 @@ MAX_REQUESTS_PER_MINUTE = 15
 CACHE_DURATION = 300
 
 
-def _get_cache_key(text: str, operation: str) -> str:
-    """Generate a cache key based on text content and operation type
-    
-    Args:
-        text: The input text to hash
-        operation: The operation type (e.g., 'summary', 'key_points', 'flashcards')
-        
-    Returns:
-        MD5 hash string as cache key
-    """
-    return hashlib.md5(f"{text}:{operation}".encode()).hexdigest()
+def _get_cache_key(text: str, operation: str, detail_level: str = "", language: str = "") -> str:
+    return hashlib.md5(f"{text}:{operation}:{detail_level}:{language}".encode()).hexdigest()
 
 
 def _is_in_cache(cache_key: str) -> Optional[Any]:
@@ -100,67 +91,68 @@ def extract_text_from_pdf(pdf_file):
     return text.strip()
 
 
-def generate_summary(text):
-    # Check cache first
-    cache_key = _get_cache_key(text, "summary")
+_DETAIL_MAP = {
+    "Brief": "Be very concise",
+    "Normal": "Provide a balanced amount of detail",
+    "Detailed": "Be comprehensive and thorough",
+}
+
+def generate_summary(text, detail_level="Normal", language="English"):
+    cache_key = _get_cache_key(text, "summary", detail_level, language)
     cached_result = _is_in_cache(cache_key)
     if cached_result is not None:
         return cached_result
     
-    # Check if we can make a request
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
     model = genai.GenerativeModel("models/gemini-1.5-flash")
-    prompt = f"Summarize the following notes in 5 clear bullet points. Use simple language.\n\nNotes:\n{text}"
+    bullet_count = {"Brief": "2-3", "Normal": "5", "Detailed": "8-10"}
+    prompt = f"Summarize the following notes in {bullet_count[detail_level]} clear bullet points. {_DETAIL_MAP[detail_level]}. Use simple language. Respond in {language}.\n\nNotes:\n{text}"
     response = model.generate_content(prompt)
     result = response.text
     
-    # Save to cache and record request
     _save_to_cache(cache_key, result)
     _record_request()
     
     return result
 
 
-def generate_key_points(text):
-    # Check cache first
-    cache_key = _get_cache_key(text, "key_points")
+def generate_key_points(text, detail_level="Normal", language="English"):
+    cache_key = _get_cache_key(text, "key_points", detail_level, language)
     cached_result = _is_in_cache(cache_key)
     if cached_result is not None:
         return cached_result
     
-    # Check if we can make a request
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
     model = genai.GenerativeModel("models/gemini-1.5-flash")
-    prompt = f"Extract the most important key points from these notes. List them as bullet points.\n\nNotes:\n{text}"
+    bullet_count = {"Brief": "3-4", "Normal": "5-6", "Detailed": "8-10"}
+    prompt = f"Extract the most important key points from these notes. List {bullet_count[detail_level]} bullet points. {_DETAIL_MAP[detail_level]}. Respond in {language}.\n\nNotes:\n{text}"
     response = model.generate_content(prompt)
     result = response.text
     
-    # Save to cache and record request
     _save_to_cache(cache_key, result)
     _record_request()
     
     return result
 
 
-def generate_flashcards(text):
-    # Check cache first
-    cache_key = _get_cache_key(text, "flashcards")
+def generate_flashcards(text, detail_level="Normal", language="English"):
+    cache_key = _get_cache_key(text, "flashcards", detail_level, language)
     cached_result = _is_in_cache(cache_key)
     if cached_result is not None:
         return cached_result
     
-    # Check if we can make a request
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
     model = genai.GenerativeModel("models/gemini-1.5-flash")
-    prompt = f"""Create 5 flashcards from the text below. Return ONLY a valid JSON array, nothing else.
+    card_count = {"Brief": "3", "Normal": "5", "Detailed": "8"}
+    prompt = f"""Create {card_count[detail_level]} flashcards from the text below. Return ONLY a valid JSON array, nothing else.
 
-Each flashcard must have "question" and "answer" fields.
+Each flashcard must have "question" and "answer" fields. Respond in {language}.
 
 Example:
 [{{"question": "What is X?", "answer": "X is Y"}}]
@@ -172,7 +164,6 @@ Text:
     cleaned = re.sub(r"```(?:json)?\n?", "", response).strip()
     result = json.loads(cleaned)
     
-    # Save to cache and record request
     _save_to_cache(cache_key, result)
     _record_request()
     
@@ -205,38 +196,29 @@ def make_json(cards):
     return json.dumps(cards, indent=2, ensure_ascii=False)
 
 
-def generate_study_questions(text):
-    """Generate study questions based on the provided text
-    
-    Args:
-        text: Input text to generate questions from
-        
-    Returns:
-        Generated study questions as string
-    """
-    # Check cache first
-    cache_key = _get_cache_key(text, "study_questions")
+def generate_study_questions(text, detail_level="Normal", language="English"):
+    cache_key = _get_cache_key(text, "study_questions", detail_level, language)
     cached_result = _is_in_cache(cache_key)
     if cached_result is not None:
         return cached_result
     
-    # Check if we can make a request
     if not _can_make_request():
         raise Exception("Rate limit exceeded. Please wait before making more requests.")
     
     model = genai.GenerativeModel("models/gemini-1.5-flash")
-    prompt = f"""Generate 4 study questions based on the following notes. Include a mix of:
-- 1-2 open-ended explanation questions
-- 1 multiple choice question (with options)
-- 1 true/false question
-- 1 short answer/application question
+    question_count = {"Brief": "2", "Normal": "4", "Detailed": "6"}
+    prompt = f"""Generate {question_count[detail_level]} study questions based on the following notes. {_DETAIL_MAP[detail_level]}. Include a mix of:
+- Open-ended explanation questions
+- Multiple choice questions (with options)
+- True/false questions
+- Short answer questions
+Respond in {language}.
 
 Notes:
 {text}"""
     response = model.generate_content(prompt)
     result = response.text
     
-    # Save to cache and record request
     _save_to_cache(cache_key, result)
     _record_request()
     
